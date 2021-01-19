@@ -14,7 +14,7 @@ Click to add 'live' dots to the gameboard.
     R          -  Create random 50x50 board layout.  
     Esc        -  Exit
     
-![A simple fork](https://raw.githubusercontent.com/not-legato/conwaysgameoflife/main/extras/sample_animation.gif)
+![A simple fork](https://raw.githubusercontent.com/not-legato/gameoflife/main/extras/sample_animation.gif)
 
 ## Config.json
     "default_resolution"      - Determines the size of the window (N x N).  
