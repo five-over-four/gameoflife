@@ -27,4 +27,4 @@ The .gif itself was generated with the following code. Note that the filenames m
 
     imageio.mimsave(os.path.join('sample.gif'), imgs, duration = 0.1)
 
-![A simple fork](https://raw.githubusercontent.com/not-legato/conwaysgameoflife/main/extras/sample_animation.gif)
+![A simple fork](https://raw.githubusercontent.com/not-legato/gameoflife/main/extras/sample_animation.gif)
