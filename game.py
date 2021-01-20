@@ -116,7 +116,7 @@ def repeatKey(countdown: int, looper: int, direction: int, granularity: int):
         countdown -= 1 if countdown > 0 else 0
         granularity -= 1 if granularity > 1 else 0
     pixel = resolution / granularity
-    return (pixel, granularity)
+    return (pixel, granularity, looper)
 
 def getMouseXY(granularity: int):
     pos = pygame.mouse.get_pos()
@@ -219,7 +219,7 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
         # once the countdown is 0, start actually repeating the key.
         if k_countdown == 0:
             data = repeatKey(k_countdown, k_looper, k_dir, granularity)
-            pixel, granularity = data[0], data[1]
+            pixel, granularity, k_looper = data[0], data[1], data[2]
             gameboard = set()
 
         pygame.display.flip()
