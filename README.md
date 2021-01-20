@@ -1,7 +1,7 @@
 # Conway's Game of Life (pygame)
 A simple implementation based on an 'adjacency' algorithm. We only keep track of the live cells and each iteration check the cells adjacent to them. This means that the board size is effectively irrelevant, as long as the number of live cells is limited. On larger boards (>1000x1000), I recommend you enter dots via the savefile by directly changing the 0s and 1s.
 
-Click to add 'live' dots to the gameboard.
+Click to add 'live' dots to the gameboard. Dragging is supported now!
 
 ## Controls
     Space      -  Play/Pause  
@@ -28,7 +28,7 @@ Click to add 'live' dots to the gameboard.
 You can also save your game states into a file or even import a file of your own. The only conditions are that the file consists of 0s and 1s in an n x n grid with no spaces, where n is a natural number.
 
 ## Future plans
-* Mouse dragging support, so you can draw more freely, more easily.
 * One-button insertion of gliders and other standard structures.
+* Possibly dragging the board around.
 
 (Note that since the gameboard wraps around the edges, small boards are 'smaller' than you may think.)
