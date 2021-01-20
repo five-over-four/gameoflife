@@ -253,7 +253,6 @@ def game(granularity: int, pixel: int, gameboard: set):
     timer = 0
     global timestep
     global grid_toggle
-    filename = 0
     
     while True:
 
@@ -292,8 +291,6 @@ def game(granularity: int, pixel: int, gameboard: set):
                 gameboard ^= {(x,y)}
 
         if timer == 0:
-            pygame.image.save(screen, str(filename) + ".png")
-            filename += 1
             gameboard = iterate(granularity, gameboard)
 
         pygame.display.flip()
