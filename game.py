@@ -17,8 +17,8 @@ try:
     key_repeat = settings["key_repeat_interval"]
 except:
     resolution = 600
-    granularity = 70
-    grid_toggle = False
+    granularity = 50
+    grid_toggle = True
     help_toggle = True
     timestep = 30
     refresh_rate = 60
@@ -29,10 +29,8 @@ pygame.init()
 screen = pygame.display.set_mode((resolution, resolution))
 clock = pygame.time.Clock()
 pygame.display.set_caption("Conway's Game of Life (PAUSED)")
-pixel = resolution / granularity
-gameboard = set()
 
-def saveBoard(filename: str, granularity: int, gameboard: list):
+def saveBoard(filename: str, granularity: int, gameboard: set):
     with open(filename, "w") as overwrite:
         overwrite.write("")
     with open(filename, "a") as file:
@@ -55,18 +53,17 @@ def loadBoard(filename: str):
     return gameboard
 
 def randomBoard(granularity: int):
-    density = choice([[0,1], [0,0,1], [0,0,0,1]])
+    density = choice([(0,1), (0,0,1), (0,0,0,1)]) # 50%, 33%, or 25% population of the board at random.
     gameboard = {((randint(0, granularity), randint(0, granularity))) for x in range(granularity**2) if choice(density) == 1}
     return (granularity, gameboard)
 
 def infoSplash():
     pos = (resolution - 300) // 2
     try:
-        splash = pygame.image.load("extras\\infosplash.png")
-        screen.blit(splash, (pos, pos))
+        screen.blit(pygame.image.load("extras\\infosplash.png"), (pos, pos))
     except:
         font = pygame.font.SysFont("courier bold", 30)
-        text_drawing = font.render("infosplash.png not found!", True, [0,0,0])
+        text_drawing = font.render("infosplash.png not found!", True, (0,0,0))
         screen.blit(text_drawing, (pos,pos))
 
 def countNeighbors(x: int, y: int, granularity: int, gameboard: set):
@@ -78,7 +75,7 @@ def countNeighbors(x: int, y: int, granularity: int, gameboard: set):
                     return neighbors
     return neighbors
 
-def chooseFate(x: int, y: int, granularity: int, gameboard: list):
+def chooseFate(x: int, y: int, granularity: int, gameboard: set):
     neighbors = countNeighbors(x, y, granularity, gameboard)
     if (x,y) not in gameboard:
         if neighbors == 3:
@@ -110,12 +107,32 @@ def iterate(granularity: int, gameboard: set):
     except:
         return fates
 
+def repeatKey(countdown: int, looper: int, direction: int, granularity: int):
+    looper = (looper + 1) % (refresh_rate * key_repeat // 1000)
+    if looper == 0 and direction == "right":
+        countdown -= 1 if countdown > 0 else 0
+        granularity += 1
+    elif looper % key_repeat == 0 and direction == "left":
+        countdown -= 1 if countdown > 0 else 0
+        granularity -= 1 if granularity > 1 else 0
+    pixel = resolution / granularity
+    return (pixel, granularity)
+
+def getMouseXY(granularity: int):
+    pos = pygame.mouse.get_pos()
+    x = floor(pos[0]/resolution * granularity)
+    y = floor(pos[1]/resolution * granularity)
+    return (x,y)
+
 def drawingScreen(granularity: int, pixel: int, gameboard: set):
 
     pygame.display.set_caption("Conway's Game of Life (PAUSED)")
     global grid_toggle
     global help_toggle
-    key_held_timer = [refresh_rate / 3, 0, ""] # countdown to repetition, then looping counter, then "left" or "right".
+    k_countdown, k_looper, k_dir = refresh_rate // 3, 0, "no direction"
+    click_repeat = False # to allow dragging. reset whenever passing over a new square.
+    click_toggle = False # this is kind of a clumsy solution, but it works.
+    last_click = (None, None) # keep track of last clicked square.
 
     while True:
 
@@ -135,12 +152,12 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
                     help_toggle = False
                     game(granularity, pixel, gameboard)
                 if event.key == pygame.K_RIGHT: # increase square count
-                    key_held_timer[2] = "right"
+                    k_dir = "right"
                     granularity += 1
                     pixel = resolution / granularity
                     gameboard = set()
                 if event.key == pygame.K_LEFT: # decrease square count
-                    key_held_timer[2] = "left"
+                    k_dir = "left"
                     granularity -= 1 if granularity > 1 else 0
                     pixel = resolution / granularity
                     gameboard = set()
@@ -169,31 +186,40 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
                 if event.key == pygame.K_ESCAPE:
                     exit()
 
-            if event.type == pygame.MOUSEBUTTONUP:
-                pos = pygame.mouse.get_pos()
-                x = floor(pos[0]/resolution * granularity)
-                y = floor(pos[1]/resolution * granularity)
-                gameboard ^= {(x,y)}
-
             if event.type == pygame.QUIT:
                 exit()
 
             if event.type == pygame.KEYUP:
-                key_held_timer = [refresh_rate / 3, 0, ""]
+                k_countdown, k_looper, k_dir = refresh_rate // 3, 0, ""
 
-        # if left or right has been pressed, count down and start repeating the key.
-        if key_held_timer[2] in ["right", "left"]:
-            key_held_timer[0] -= 1 if key_held_timer[0] > 0 else 0
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                (x,y) = getMouseXY(granularity)
+                gameboard ^= {(x,y)}
+                last_click = (x,y)
+                click_toggle = True
+                click_repeat = True
+
+            if event.type == pygame.MOUSEBUTTONUP:
+                click_toggle = False
+                click_repeat = False
+
+        # check if on a new square from previous click.
+        if click_repeat == False and getMouseXY(granularity) != last_click and click_toggle == True:
+            click_repeat = True
+        else:
+            (x,y) = getMouseXY(granularity)
+            if (x,y) != last_click and click_toggle == True:
+                gameboard ^= {(x,y)}
+                last_click = (x,y)
+
+        # if left or right has been pressed, start counting down.
+        if k_dir in ["right", "left"]:
+            k_countdown -= 1 if k_countdown > 0 else 0
             
-        if key_held_timer[0] == 0:
-            key_held_timer[1] = (key_held_timer[1] + 1) % (refresh_rate * key_repeat // 1000)
-            if key_held_timer[1] == 0 and key_held_timer[2] == "right":
-                key_held_timer[0] -= 1 if key_held_timer[0] > 0 else 0
-                granularity += 1
-            elif key_held_timer[1] % key_repeat == 0 and key_held_timer[2] == "left":
-                key_held_timer[0] -= 1 if key_held_timer[0] > 0 else 0
-                granularity -= 1 if granularity > 1 else 0
-            pixel = resolution / granularity
+        # once the countdown is 0, start actually repeating the key.
+        if k_countdown == 0:
+            data = repeatKey(k_countdown, k_looper, k_dir, granularity)
+            pixel, granularity = data[0], data[1]
             gameboard = set()
 
         pygame.display.flip()
@@ -234,14 +260,14 @@ def game(granularity: int, pixel: int, gameboard: set):
                 if event.key == pygame.K_ESCAPE:
                     exit()
 
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.QUIT:
+                exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 x = floor(pos[0]/resolution * granularity)
                 y = floor(pos[1]/resolution * granularity)
                 gameboard ^= {(x,y)}
-
-            if event.type == pygame.QUIT:
-                exit()
 
         if timer == 0:
             gameboard = iterate(granularity, gameboard)
@@ -250,4 +276,5 @@ def game(granularity: int, pixel: int, gameboard: set):
         clock.tick(refresh_rate)
 
 if __name__ == "__main__":
-    drawingScreen(granularity, pixel, gameboard)
+
+    drawingScreen(granularity, resolution / granularity, set())
