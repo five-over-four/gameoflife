@@ -43,6 +43,7 @@ You can also save your game states into a file or even import a file of your own
 * The board is resizable by holding down either left or right.
 
 ## Future plans
+* Natively supported .gif making mode.
 * One-button insertion of gliders and other standard structures.
 * Possibly dragging the board around.
 
