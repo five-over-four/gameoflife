@@ -1,9 +1,9 @@
 {
     "default_resolution": 600,
-    "default_granularity": 70,
-    "show_controls_at_launch": 0,
-    "default_show_grid": 0,
+    "default_granularity": 50,
+    "show_controls_at_launch": 1,
+    "default_show_grid": 1,
     "default_timestep": 30,
     "screen_refresh_rate": 60,
-    "key_repeat_interval": 50
+    "key_repeat_interval": 30
 }
