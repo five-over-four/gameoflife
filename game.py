@@ -3,18 +3,37 @@ import json
 from math import floor, ceil
 from random import randint, choice
 
+# colour standards. customise your own in config.json.
+colours = { "black": (0,0,0), \
+            "white": (255,255,255), \
+            "light_grey": (180,180,180), \
+            "red": (255,0,0), \
+            "green": (0,255,0), \
+            "blue": (0,0,255), \
+            "purple": (170,0,255), \
+            "yellow": (255,255,0), \
+            "dark_red": (100,0,0), \
+            "dark_green": (0,100,0), \
+            "dark_blue": (0,0,150), \
+            "grey": (130,130,130), \
+            "dark_grey": (60,60,60)
+          }
+
 # If config.json exists, take persistent settings. Otherwise defaults.
 try:
     with open("config.json") as file:
         data = file.read()
-    settings = json.loads(data)
-    resolution = settings["default_resolution"]
-    granularity = settings["default_granularity"]
-    timestep = settings["default_timestep"]
-    grid_toggle = bool(settings["default_show_grid"])
-    help_toggle = bool(settings["show_controls_at_launch"])
-    refresh_rate = settings["screen_refresh_rate"]
-    key_repeat = settings["key_repeat_interval"]
+    s = json.loads(data)
+    resolution = s["default_resolution"]
+    granularity = s["default_granularity"]
+    timestep = s["default_timestep"]
+    grid_toggle = bool(s["default_show_grid"])
+    help_toggle = bool(s["show_controls_at_launch"])
+    refresh_rate = s["screen_refresh_rate"]
+    key_repeat = s["key_repeat_interval"]
+    dot_colour = colours[s["dot_colour"]]
+    bg_colour = colours[s["bg_colour"]]
+    grid_colour = colours[s["grid_colour"]]
 except:
     resolution = 600
     granularity = 50
@@ -23,6 +42,9 @@ except:
     timestep = 30
     refresh_rate = 60
     key_repeat = 50
+    dot_colour = colours["black"]
+    bg_colour = colours["white"]
+    grid_colour = colours["grey"]
 
 # global components
 pygame.init()
@@ -89,11 +111,10 @@ def chooseFate(x: int, y: int, granularity: int, gameboard: set):
             return (x,y)
 
 def drawGrid(granularity: int, pixel: int):
-    colour = [200, 200, 200]
     for x in range(0, granularity):
-        pygame.draw.line(screen, colour, (x * pixel, 0), (x * pixel, resolution), 1)
+        pygame.draw.line(screen, grid_colour, (x * pixel, 0), (x * pixel, resolution), 1)
     for y in range(0, granularity):
-        pygame.draw.line(screen, colour, (0, y * pixel), (resolution, y * pixel), 1)
+        pygame.draw.line(screen, grid_colour, (0, y * pixel), (resolution, y * pixel), 1)
 
 def iterate(granularity: int, gameboard: set):
     fates = set()
@@ -137,9 +158,9 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
     while True:
 
         # grid, dots, help splash.
-        screen.fill((255,255,255))
+        screen.fill(bg_colour)
         for (x,y) in gameboard:
-            pygame.draw.rect(screen, [0,0,0], (x * pixel, y * pixel, ceil(resolution/granularity), ceil(resolution/granularity)))
+            pygame.draw.rect(screen, dot_colour, (x * pixel, y * pixel, ceil(resolution/granularity), ceil(resolution/granularity)))
         if grid_toggle:
             drawGrid(granularity, pixel)
         if help_toggle:
@@ -232,15 +253,16 @@ def game(granularity: int, pixel: int, gameboard: set):
     timer = 0
     global timestep
     global grid_toggle
+    filename = 0
     
     while True:
 
         timer = (timer + 1) % timestep
 
         # grid and dots.
-        screen.fill((255,255,255))
+        screen.fill(bg_colour)
         for (x,y) in gameboard:
-            pygame.draw.rect(screen, [0,0,0], (x * pixel, y * pixel, ceil(pixel), ceil(pixel)))
+            pygame.draw.rect(screen, dot_colour, (x * pixel, y * pixel, ceil(pixel), ceil(pixel)))
         if grid_toggle:
             drawGrid(granularity, pixel)
 
@@ -270,6 +292,8 @@ def game(granularity: int, pixel: int, gameboard: set):
                 gameboard ^= {(x,y)}
 
         if timer == 0:
+            pygame.image.save(screen, str(filename) + ".png")
+            filename += 1
             gameboard = iterate(granularity, gameboard)
 
         pygame.display.flip()
