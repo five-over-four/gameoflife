@@ -15,8 +15,6 @@ A simple implementation based on an 'adjacency' algorithm. We only keep track of
     X          -  Clear the board.  
     R          -  Create random 50x50 board layout.  
     Esc        -  Exit
-    
-![A simple fork](https://i.imgur.com/FNkbYEQ.gif)
 
 ## Colours
 In config.json, the bottom three settings let you choose your own colour scheme. The currently available colours are black, white, light grey, grey, dark grey, red, green, blue, purple, yellow, dark red, dark green, dark blue,grey. Behold! Make these yourself with the GIF mode.
