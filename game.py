@@ -22,7 +22,6 @@ try:
     help_toggle = bool(s["show_controls_at_launch"])
     refresh_rate = s["screen_refresh_rate"]
     key_repeat = s["key_repeat_interval"]
-    gif_mode = bool(s["gif_mode"])
     gif_speed = float(s["gif_speed"])
     dot_colour = colours[s["dot_colour"]]
     bg_colour = colours[s["bg_colour"]]
@@ -35,16 +34,17 @@ except:
     timestep = 30
     refresh_rate = 60
     key_repeat = 50
-    gif_mode = False
     dot_colour = colours["black"]
     bg_colour = colours["white"]
     grid_colour = colours["light_grey"]
+
+# this setting is now toggleable in-game, instead of the .json file.
+gif_mode = False
 
 # global components
 pygame.init()
 screen = pygame.display.set_mode((resolution, resolution))
 clock = pygame.time.Clock()
-pygame.display.set_caption("Conway's Game of Life (PAUSED)")
 
 def saveBoard(filename: str, granularity: int, gameboard: set):
     with open(filename, "w") as overwrite:
@@ -74,7 +74,7 @@ def randomBoard(granularity: int):
     return (granularity, gameboard)
 
 def infoSplash():
-    pos = (resolution - 300) // 2
+    pos = (resolution - 400) // 2
     try:
         screen.blit(pygame.image.load("extras/infosplash.png"), (pos, pos))
     except:
@@ -139,11 +139,10 @@ def getMouseXY(granularity: int):
     y = floor(pos[1]/resolution * granularity)
     return (x,y)
 
-# take the generated .png files, generate .gif, then delete every .png
-def makeGif():
+def makeGif(): # take .png files, generate .gif, then delete every .png
     dir = "extras/gifs/"
     image_folder = os.fsencode(dir)
-    gif_name = 0 # multiple gifs: 0.gif, 1.gif, 2.gif, ...
+    gif_name = 0 # iterate through names.
     files = []
 
     for filename in os.listdir(dir):
@@ -160,15 +159,26 @@ def makeGif():
         if filename.endswith(".png"):
             os.remove(dir + filename)
 
-def drawingScreen(granularity: int, pixel: int, gameboard: set):
+def globallyImportModules(): # this is some voodoo.
+    global os
+    global imageio
+    os = __import__("os", globals(), locals())
+    imageio = __import__("imageio", globals(), locals())
 
-    pygame.display.set_caption("Conway's Game of Life (PAUSED)")
+def pauseScreen(granularity: int, pixel: int, gameboard: set):
+
+    global gif_mode
     global grid_toggle
     global help_toggle
     k_countdown, k_looper, k_dir = refresh_rate // 3, 0, "no direction"
     click_repeat = False # to allow dragging. reset whenever passing over a new square.
     click_toggle = False # is the mouse button depressed or not?
     last_click = (None, None) # keep track of last clicked square.
+
+    if gif_mode == True:
+        pygame.display.set_caption("Conway's Game of Life (GIF MODE) (PAUSED)")
+    else:
+        pygame.display.set_caption("Conway's Game of Life (PAUSED)")
 
     while True:
 
@@ -181,26 +191,39 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
         if help_toggle:
             infoSplash()
 
+        # all the event handling happens here.
         for event in pygame.event.get():
 
             if event.type == pygame.KEYDOWN:
+
+                # Play
                 if event.key == pygame.K_SPACE:
                     help_toggle = False
                     game(granularity, pixel, gameboard)
-                if event.key == pygame.K_RIGHT: # increase square count
+
+                # increase square count
+                if event.key == pygame.K_RIGHT:
                     k_dir = "right"
                     granularity += 1
                     pixel = resolution / granularity
                     gameboard = set()
-                if event.key == pygame.K_LEFT: # decrease square count
+
+                # decrease square count
+                if event.key == pygame.K_LEFT:
                     k_dir = "left"
                     granularity -= 1 if granularity > 1 else 0
                     pixel = resolution / granularity
                     gameboard = set()
+
                 if event.key == pygame.K_g:
                     grid_toggle ^= True
+                
+                if event.key == pygame.K_h:
+                    help_toggle ^= True
+
                 if event.key == pygame.K_s:
                     saveBoard("board.sav", granularity, gameboard)
+                    
                 if event.key == pygame.K_l:
                     try:
                         gameboard = loadBoard("board.sav")
@@ -210,21 +233,35 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
                         pixel = resolution / granularity
                     except Exception as e: # this should be impossible.
                         print(f"{e}.")     # error handling is already done in loadBoard().
+
                 if event.key == pygame.K_x:
                     gameboard = set()
+
                 if event.key == pygame.K_r:
                     data = randomBoard(granularity)
                     granularity = data[0]
                     pixel = resolution / granularity
                     gameboard = data[1]
-                if event.key == pygame.K_h:
-                    help_toggle ^= True
+
+                # toggle gif mode, change titlebar text, import libraries.
+                if event.key == pygame.K_i:
+                    try: # needs imageio to work.
+                        globallyImportModules()
+                        gif_mode ^= True
+                        if gif_mode == True:
+                            pygame.display.set_caption("Conway's Game of Life (GIF MODE) (PAUSED)")
+                        else:
+                            pygame.display.set_caption("Conway's Game of Life (PAUSED)")
+                    except:
+                        print("imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
+
                 if event.key == pygame.K_ESCAPE:
                     exit()
 
             if event.type == pygame.QUIT:
                 exit()
 
+            # these next three if blocks handle the drag drawing logic.
             if event.type == pygame.KEYUP:
                 k_countdown, k_looper, k_dir = refresh_rate // 3, 0, ""
 
@@ -239,7 +276,7 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
                 click_toggle = False
                 click_repeat = False
 
-        # check if on a new square from previous click.
+        # check if on a new square from previous click and that the mouse button is down.
         if click_repeat == False and getMouseXY(granularity) != last_click and click_toggle == True:
             click_repeat = True
         else:
@@ -264,11 +301,16 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
 
 def game(granularity: int, pixel: int, gameboard: set):
 
-    pygame.display.set_caption("Conway's Game of Life (PLAYING)")
-    timer = 0
+    global gif_mode
     global timestep
     global grid_toggle
+    timer = 0
     filename = 0 # if gif_mode == True, then generate 0.png, 1.png, 2.png, ...
+
+    if gif_mode == True:
+        pygame.display.set_caption("Conway's Game of Life (GIF MODE) (PLAYING)")
+    else:
+        pygame.display.set_caption("Conway's Game of Life (PLAYING)")
     
     while True:
 
@@ -282,26 +324,33 @@ def game(granularity: int, pixel: int, gameboard: set):
             drawGrid(granularity, pixel)
 
         for event in pygame.event.get():
+
             if event.type == pygame.KEYDOWN:
+
                 if event.key == pygame.K_SPACE:
                     if gif_mode == True and filename > 1:
                         makeGif()
-                    drawingScreen(granularity, pixel, gameboard)
+                    pauseScreen(granularity, pixel, gameboard)
+
                 if event.key == pygame.K_DOWN:
                     timestep += ceil(timestep / 3)
+
                 if event.key == pygame.K_UP:
                     timestep -= floor(timestep / 3) if timestep > 2 else 0
+
                 if event.key == pygame.K_g:
                     grid_toggle ^= True
+
                 if event.key == pygame.K_x:
                     gameboard = set()
-                    drawingScreen(granularity, pixel, gameboard)
-                if event.key == pygame.K_ESCAPE:
-                    if gif_mode == True and filename > 1:
-                        makeGif()
-                    exit()
+                    pauseScreen(granularity, pixel, gameboard)
 
+                if event.key == pygame.K_ESCAPE:
+                    exit()
+            # always deal with gif generation before quitting.
             if event.type == pygame.QUIT:
+                if gif_mode == True and filename > 1:
+                    makeGif()
                 exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -321,13 +370,4 @@ def game(granularity: int, pixel: int, gameboard: set):
 
 if __name__ == "__main__":
 
-    # you need imageio installed to use gif mode.
-    if gif_mode == True:
-        try:
-            import imageio
-            import os
-        except:
-            print("imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
-            gif_mode = False
-
-    drawingScreen(granularity, resolution / granularity, set())
+    pauseScreen(granularity, resolution / granularity, set())
