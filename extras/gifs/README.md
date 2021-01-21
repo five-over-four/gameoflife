@@ -1,0 +1,1 @@
+This directory holds everything produced by GIF mode.
