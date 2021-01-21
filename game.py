@@ -4,22 +4,13 @@ from math import floor, ceil
 from random import randint, choice
 
 # colour standards. customise your own in config.json.
-colours = { "black": (0,0,0), \
-            "white": (255,255,255), \
-            "light_grey": (180,180,180), \
-            "red": (255,0,0), \
-            "green": (0,255,0), \
-            "blue": (0,0,255), \
-            "purple": (170,0,255), \
-            "yellow": (255,255,0), \
-            "dark_red": (100,0,0), \
-            "dark_green": (0,100,0), \
-            "dark_blue": (0,0,150), \
-            "grey": (130,130,130), \
-            "dark_grey": (60,60,60)
+colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180), \
+            "red": (255,0,0), "green": (0,255,0), "blue": (0,0,255), "purple": (170,0,255), \
+            "yellow": (255,255,0), "dark_red": (100,0,0), "dark_green": (0,100,0), \
+            "dark_blue": (0,0,150), "grey": (130,130,130), "dark_grey": (60,60,60)
           }
 
-# If config.json exists, take persistent settings. Otherwise defaults.
+# this loads the settings from config.json, or defaults below.
 try:
     with open("config.json") as file:
         data = file.read()
@@ -31,6 +22,8 @@ try:
     help_toggle = bool(s["show_controls_at_launch"])
     refresh_rate = s["screen_refresh_rate"]
     key_repeat = s["key_repeat_interval"]
+    gif_mode = bool(s["gif_mode"])
+    gif_speed = float(s["gif_speed"])
     dot_colour = colours[s["dot_colour"]]
     bg_colour = colours[s["bg_colour"]]
     grid_colour = colours[s["grid_colour"]]
@@ -42,9 +35,10 @@ except:
     timestep = 30
     refresh_rate = 60
     key_repeat = 50
+    gif_mode = False
     dot_colour = colours["black"]
     bg_colour = colours["white"]
-    grid_colour = colours["grey"]
+    grid_colour = colours["light_grey"]
 
 # global components
 pygame.init()
@@ -82,7 +76,7 @@ def randomBoard(granularity: int):
 def infoSplash():
     pos = (resolution - 300) // 2
     try:
-        screen.blit(pygame.image.load("extras\\infosplash.png"), (pos, pos))
+        screen.blit(pygame.image.load("extras/infosplash.png"), (pos, pos))
     except:
         font = pygame.font.SysFont("courier bold", 30)
         text_drawing = font.render("infosplash.png not found!", True, (0,0,0))
@@ -145,6 +139,27 @@ def getMouseXY(granularity: int):
     y = floor(pos[1]/resolution * granularity)
     return (x,y)
 
+# take the generated .png files, generate .gif, then delete every .png
+def makeGif():
+    dir = "extras/gifs/"
+    image_folder = os.fsencode(dir)
+    gif_name = 0 # multiple gifs: 0.gif, 1.gif, 2.gif, ...
+    files = []
+
+    for filename in os.listdir(dir):
+        if filename.endswith(".png"):
+            files.append(filename)
+        elif filename.endswith(".gif"):
+            gif_name += 1
+
+    files = sorted(files, key = lambda x: int(x.split(".")[0]))
+    images = list(map(lambda filename: imageio.imread(dir + filename), files))
+    imageio.mimsave(os.path.join(dir + str(gif_name) + ".gif"), images, duration = gif_speed)
+
+    for filename in os.listdir(dir): # delete .png files.
+        if filename.endswith(".png"):
+            os.remove(dir + filename)
+
 def drawingScreen(granularity: int, pixel: int, gameboard: set):
 
     pygame.display.set_caption("Conway's Game of Life (PAUSED)")
@@ -152,7 +167,7 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
     global help_toggle
     k_countdown, k_looper, k_dir = refresh_rate // 3, 0, "no direction"
     click_repeat = False # to allow dragging. reset whenever passing over a new square.
-    click_toggle = False # this is kind of a clumsy solution, but it works.
+    click_toggle = False # is the mouse button depressed or not?
     last_click = (None, None) # keep track of last clicked square.
 
     while True:
@@ -193,8 +208,8 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
                             line = file.readline()
                         granularity = len(line.strip())
                         pixel = resolution / granularity
-                    except Exception as e:
-                        print(f"{e}.")
+                    except Exception as e: # this should be impossible.
+                        print(f"{e}.")     # error handling is already done in loadBoard().
                 if event.key == pygame.K_x:
                     gameboard = set()
                 if event.key == pygame.K_r:
@@ -233,7 +248,7 @@ def drawingScreen(granularity: int, pixel: int, gameboard: set):
                 gameboard ^= {(x,y)}
                 last_click = (x,y)
 
-        # if left or right has been pressed, start counting down.
+        # if left or right is depressed, start counting down.
         if k_dir in ["right", "left"]:
             k_countdown -= 1 if k_countdown > 0 else 0
             
@@ -253,6 +268,7 @@ def game(granularity: int, pixel: int, gameboard: set):
     timer = 0
     global timestep
     global grid_toggle
+    filename = 0 # if gif_mode == True, then generate 0.png, 1.png, 2.png, ...
     
     while True:
 
@@ -268,6 +284,8 @@ def game(granularity: int, pixel: int, gameboard: set):
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
+                    if gif_mode == True and filename > 1:
+                        makeGif()
                     drawingScreen(granularity, pixel, gameboard)
                 if event.key == pygame.K_DOWN:
                     timestep += ceil(timestep / 3)
@@ -279,6 +297,8 @@ def game(granularity: int, pixel: int, gameboard: set):
                     gameboard = set()
                     drawingScreen(granularity, pixel, gameboard)
                 if event.key == pygame.K_ESCAPE:
+                    if gif_mode == True and filename > 1:
+                        makeGif()
                     exit()
 
             if event.type == pygame.QUIT:
@@ -292,10 +312,22 @@ def game(granularity: int, pixel: int, gameboard: set):
 
         if timer == 0:
             gameboard = iterate(granularity, gameboard)
+            if gif_mode == True:
+                pygame.image.save(screen, "extras/gifs/" + str(filename) + ".png")
+                filename += 1
 
         pygame.display.flip()
         clock.tick(refresh_rate)
 
 if __name__ == "__main__":
+
+    # you need imageio installed to use gif mode.
+    if gif_mode == True:
+        try:
+            import imageio
+            import os
+        except:
+            print("imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
+            gif_mode = False
 
     drawingScreen(granularity, resolution / granularity, set())

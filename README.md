@@ -1,7 +1,9 @@
 # Conway's Game of Life (pygame)
 A simple implementation based on an 'adjacency' algorithm. We only keep track of the live cells and each iteration check the cells adjacent to them. This means that the board size is effectively irrelevant, as long as the number of live cells is limited. On larger boards (> 1000 x 1000), I recommend you enter dots via the savefile by directly changing the 0s and 1s.
 
-Click to add 'live' dots to the gameboard. Drawing by dragging is now supported!
+* Click to add 'live' dots to the gameboard. Drawing by dragging is now supported!
+
+* A newly added GIF mode will allow you to easily save your animations as .gifs with ease! (this uses imageio)
 
 ## Controls
     Space      -  Play/Pause  
@@ -16,12 +18,15 @@ Click to add 'live' dots to the gameboard. Drawing by dragging is now supported!
     
 ![A simple fork](https://i.imgur.com/FNkbYEQ.gif)
 
-## Colours!
-In config.json, the bottom three settings let you choose your own colour scheme. The currently available colours are black, white, light grey, grey, dark grey, red, green, blue, purple, yellow, dark red, dark green, dark blue,grey. Behold!
+## Colours
+In config.json, the bottom three settings let you choose your own colour scheme. The currently available colours are black, white, light grey, grey, dark grey, red, green, blue, purple, yellow, dark red, dark green, dark blue,grey. Behold! Make these yourself with the GIF mode.
 
 | Green, Dark Green | Red, Yellow |
 | --- | --- |
 | ![](https://i.imgur.com/CY5lPSD.gif) | ![woops](https://i.imgur.com/MtR1k8K.gif) |
+
+## GIF mode
+Change "gif_mode" to 1 in config.json, and every time you start playing, you will get a new animated .gif file in your extras/gifs directory! Just draw a shape, load an existing board, or randomise it, press play, and once you pause, a new animation awaits. The setting "gif_speed" in config.json determines how much time passes (in seconds) between each frame in the final animation.
 
 ## Config.json
     "default_resolution"      - Determines the size of the window (N x N).  
@@ -38,13 +43,11 @@ In config.json, the bottom three settings let you choose your own colour scheme.
 You can also save your game states into a file or even import a file of your own. The only conditions are that the file consists of 0s and 1s in an n x n grid with no spaces, where n is a natural number. T
 
 ## Features
-* You can draw by holding down the mouse button while paused.
 * The colours are (reasonably) fully customisable!
+* The built-in GIF mode will allow you to share your patterns with others easily!
+* You can draw by holding down the mouse button while paused.
 * The board is resizable by holding down either left or right.
 
 ## Future plans
-* Natively supported .gif making mode.
 * One-button insertion of gliders and other standard structures.
 * Possibly dragging the board around.
-
-(Note that since the gameboard wraps around the edges, small boards are 'smaller' than you may think.)

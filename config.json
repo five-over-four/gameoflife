@@ -1,11 +1,13 @@
 {
     "default_resolution": 600,
     "default_granularity": 60,
-    "show_controls_at_launch": 0,
+    "show_controls_at_launch": 1,
     "default_show_grid": 1,
     "default_timestep": 30,
     "screen_refresh_rate": 60,
     "key_repeat_interval": 30,
+    "gif_mode": 1,
+    "gif_speed": 0.1,
     "dot_colour": "black",
     "bg_colour": "white",
     "grid_colour": "light_grey"
