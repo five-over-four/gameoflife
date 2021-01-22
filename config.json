@@ -1,6 +1,7 @@
 {
-    "default_resolution": 600,
-    "default_granularity": 60,
+    "x_resolution": 600,
+    "y_resolution": 600,
+    "pixel_size": 10,
     "show_controls_at_launch": 0,
     "default_show_grid": 0,
     "default_timestep": 30,
