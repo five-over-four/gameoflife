@@ -1,6 +1,6 @@
 import pygame
 import json
-from math import floor, ceil
+from math import ceil
 from random import randint, choice
 
 # colour standards. customise your own in config.json.
@@ -105,23 +105,23 @@ class Board():
             self.gameboard = fates
 
 
-# other functions.
+# display the controls page at the *center* of the screen.
 def infoSplash(board: Board):
     x_pos = (board.width - 400) // 2 # the splash image is 400 x 399.
     y_pos = (board.height - 399) // 2
     try:
-        screen.blit(pygame.image.load("extras/infosplash.png"), (board.x_pos, board.y_pos))
+        screen.blit(pygame.image.load("extras/infosplash.png"), (x_pos, y_pos))
     except:
         font = pygame.font.SysFont("courier bold", 30)
         text_drawing = font.render("infosplash.png not found!", True, (0,0,0))
-        screen.blit(text_drawing, (board.x_pos, board.y_pos))
+        screen.blit(text_drawing, (0, 0))
 
 def countNeighbors(x: int, y: int, board: Board):
     neighbors = 0
     for (dx, dy) in {(-1,-1), (-1,1), (-1,0), (0,1), (0,-1), (1,1), (1,-1), (1,0)}:
-        if ((x + dx) % board.x_dots, (y + dy) % board.y_dots) in board.gameboard:
+        if ((x + dx) % board.x_dots, (y + dy) % board.y_dots) in board.gameboard: # loop around edges.
             neighbors += 1
-            if neighbors > 3:
+            if neighbors > 3: # save some time in busy areas.
                 return neighbors
     return neighbors
 
@@ -156,23 +156,23 @@ def repeatKey(countdown: int, looper: int, direction: int, dot: int):
 
 def getMouseXY(board: Board):
     pos = pygame.mouse.get_pos()
-    x = floor(pos[0]/ board.dot)
-    y = floor(pos[1]/ board.dot)
+    x = pos[0] // board.dot
+    y = pos[1] // board.dot
     return (x,y)
 
 def makeGif(): # take .png files, generate .gif, then delete every .png
     dir = "extras/gifs/"
     image_folder = os.fsencode(dir)
-    gif_name = 0 # iterate through names.
+    gif_name = 0 # iterate through names 0.gif, 1.gif, ...
     files = []
 
-    for filename in os.listdir(dir):
+    for filename in os.listdir(dir): # find .png filenames.
         if filename.endswith(".png"):
             files.append(filename)
         elif filename.endswith(".gif"):
             gif_name += 1
 
-    files = sorted(files, key = lambda x: int(x.split(".")[0]))
+    files = sorted(files, key = lambda x: int(x.split(".")[0])) # make .gif.
     images = list(map(lambda filename: imageio.imread(dir + filename), files))
     imageio.mimsave(os.path.join(dir + str(gif_name) + ".gif"), images, duration = gif_speed)
 
@@ -264,10 +264,10 @@ def pauseScreen(board: Board):
                 if event.key == pygame.K_ESCAPE:
                     exit()
 
-            # these next three if blocks handle the drag drawing logic.
             elif event.type == pygame.KEYUP:
                 k_countdown, k_looper, k_dir = refresh_rate // 3, 0, ""
 
+            # placing a new dot by clicking.
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 (x,y) = getMouseXY(board)
                 board.gameboard ^= {(x,y)}
@@ -275,6 +275,7 @@ def pauseScreen(board: Board):
                 click_toggle = True
                 click_repeat = True
 
+            # persistent memory of whether click is depressed.
             elif event.type == pygame.MOUSEBUTTONUP:
                 click_toggle = False
                 click_repeat = False
@@ -301,9 +302,9 @@ def pauseScreen(board: Board):
             
         # once the countdown is 0, start actually repeating the key.
         if k_countdown == 0:
-            data = repeatKey(k_countdown, k_looper, k_dir, dot)
+            data = repeatKey(k_countdown, k_looper, k_dir, board.dot)
             board.dot, k_looper = data[0], data[1]
-            board.gameboard = set()
+            board.set_dots()
 
         pygame.display.flip()
         clock.tick(refresh_rate)
@@ -340,7 +341,7 @@ def game(board):
                     pauseScreen(board)
 
                 elif event.key == pygame.K_UP:
-                    board.timestep -= floor(board.timestep / 3) if board.timestep > 2 else 0
+                    board.timestep -= board.timestep // 3 if board.timestep > 2 else 0
 
                 elif event.key == pygame.K_DOWN:
                     board.timestep += ceil(board.timestep / 3)
@@ -382,4 +383,4 @@ if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode((board.width, board.height), pygame.RESIZABLE)
     clock = pygame.time.Clock()
-    pauseScreen(Board())
+    pauseScreen(board)
