@@ -15,12 +15,6 @@ try:
     with open("config.json") as file:
         data = file.read()
     s = json.loads(data)
-    width = s["x_resolution"]
-    height = s["y_resolution"]
-    dot = s["pixel_size"]
-    timestep = s["default_timestep"]
-    grid_toggle = bool(s["default_show_grid"])
-    help_toggle = bool(s["show_controls_at_launch"])
     refresh_rate = s["screen_refresh_rate"]
     key_repeat = s["key_repeat_interval"]
     gif_speed = float(s["gif_speed"])
@@ -28,77 +22,112 @@ try:
     bg_colour = colours[s["bg_colour"]]
     grid_colour = colours[s["grid_colour"]]
 except:
-    width = 600
-    height = 600
-    dot = 10
-    grid_toggle = True
-    help_toggle = True
-    timestep = 30
     refresh_rate = 60
     key_repeat = 50
     dot_colour = colours["black"]
     bg_colour = colours["white"]
     grid_colour = colours["light_grey"]
 
-gif_mode = False # gotta initialise this for global use.
+# this class deals with the movement of the board and all of its 'physical' attributes
+# such as resolution, dot size, dot count, toggles. struct.
+class Board():
+    def __init__(self):
+        try:
+            with open("config.json") as file:
+                data = file.read()
+            s = json.loads(data)
+            self.width = s["x_resolution"]
+            self.height = s["y_resolution"]
+            self.dot = s["pixel_size"]
+            self.timestep = s["default_timestep"]
+            self.grid_toggle = bool(s["default_show_grid"])
+            self.help_toggle = bool(s["show_controls_at_launch"])
+        except:
+            self.width = 600
+            self.height = 400
+            self.dot = 10
+            self.grid_toggle = True
+            self.help_toggle = True
+            self.timestep = 30
+        self.x_dots = self.width // self.dot
+        self.y_dots = self.height // self.dot
+        self.gameboard = set()
+        self.gif_mode = False
 
-# global components. resizable window is a REAL pain to deal with.
-pygame.init()
-screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
-clock = pygame.time.Clock()
+    # generate 'random' board layout.
+    def random(self):
+        density = choice([(0,1), (0,0,1), (0,0,0,1)]) # 50%, 33%, or 25% population of the board at random.
+        n_dots = self.x_dots * self.y_dots
+        self.gameboard = {((randint(0, self.width // self.dot - 1), randint(0, self.height // self.dot - 1))) for x in range(n_dots) if choice(density) == 1}
 
-def saveBoard(filename: str, dot: int, x_dots: int, y_dots: int, gameboard: set):
-    with open(filename, "w") as overwrite:
-        overwrite.write("")
-    with open(filename, "a") as file:
-        for y in range(y_dots):
-            for x in range(x_dots):
-                if (x,y) not in gameboard:
-                    file.write("0")
-                else:
-                    file.write("1")
-            file.write("\n")
+    def set_dots(self):
+        self.x_dots = self.width // self.dot
+        self.y_dots = self.height // self.dot
+        self.gameboard = set()
 
-def loadBoard(filename: str):
-    gameboard = set()
-    with open(filename) as file:
-        lines = file.readlines()
-    y_dots = len(lines)
-    x_dots = len(lines[0].strip())
-    for y in range(y_dots):
-        for x in range(x_dots):
-            if lines[y][x] == "1":
-                gameboard.add((x,y))
-    return x_dots, y_dots, gameboard
+    def save(self):
+        with open("board.sav", "w") as overwrite:
+            overwrite.write("")
+        with open("board.sav", "a") as file:
+            for y in range(self.y_dots):
+                for x in range(self.x_dots):
+                    if (x,y) not in selrf.gameboard:
+                        file.write("0")
+                    else:
+                        file.write("1")
+                file.write("\n")
+                
+    def load(self):
+        try:
+            with open("board.sav") as file:
+                lines = file.readlines()
+            self.gameboard = set()
+            self.y_dots = len(lines)
+            self.x_dots = len(lines[0].strip())
+            for y in range(self.y_dots):
+                for x in range(self.x_dots):
+                    if lines[y][x] == "1":
+                        self.gameboard.add((x,y))
+            self.dot = ceil(self.width / self.x_dots)
+        except Exception as e:
+            print(e)
 
-def randomBoard(dot: int):
-    density = choice([(0,1), (0,0,1), (0,0,0,1)]) # 50%, 33%, or 25% population of the board at random.
-    n_dots = (width // dot) * (height // dot)
-    gameboard = {((randint(0, width // dot - 1), randint(0, height // dot - 1))) for x in range(n_dots) if choice(density) == 1}
-    return gameboard
+    def iterate(self):
+        fates = set()
+        for (x,y) in self.gameboard:
+            fates.add(chooseFate(x, y, self))
+            for (dx, dy) in {(-1,-1), (-1,1), (-1,0), (0,1), (0,-1), (1,1), (1,-1), (1,0)}:
+                fates.add(chooseFate((x + dx) % self.x_dots, (y + dy) % self.y_dots, self))
+        try:
+            fates.remove(0)
+            self.gameboard = fates
+        except:
+            self.gameboard = fates
 
-def infoSplash():
-    x_pos = (width - 400) // 2 # the splash image is 400 x 399.
-    y_pos = (height - 399) // 2
+
+# other functions.
+def infoSplash(board: Board):
+    x_pos = (board.width - 400) // 2 # the splash image is 400 x 399.
+    y_pos = (board.height - 399) // 2
     try:
-        screen.blit(pygame.image.load("extras/infosplash.png"), (x_pos, y_pos))
+        screen.blit(pygame.image.load("extras/infosplash.png"), (board.x_pos, board.y_pos))
     except:
         font = pygame.font.SysFont("courier bold", 30)
         text_drawing = font.render("infosplash.png not found!", True, (0,0,0))
-        screen.blit(text_drawing, (x_pos, y_pos))
+        screen.blit(text_drawing, (board.x_pos, board.y_pos))
 
-def countNeighbors(x: int, y: int, x_dots: int, y_dots: int, gameboard: set):
+def countNeighbors(x: int, y: int, board: Board):
     neighbors = 0
     for (dx, dy) in {(-1,-1), (-1,1), (-1,0), (0,1), (0,-1), (1,1), (1,-1), (1,0)}:
-        if ((x + dx) % x_dots, (y + dy) % y_dots) in gameboard:
+        if ((x + dx) % board.x_dots, (y + dy) % board.y_dots) in board.gameboard:
             neighbors += 1
             if neighbors > 3:
                 return neighbors
     return neighbors
 
-def chooseFate(x: int, y: int, x_dots: int, y_dots, gameboard: set):
-    neighbors = countNeighbors(x, y, x_dots, y_dots, gameboard)
-    if (x,y) not in gameboard:
+def chooseFate(x: int, y: int, board: Board):
+    neighbors = countNeighbors(x, y, board)
+    if (x,y) not in board.gameboard:
         if neighbors == 3:
             return (x,y)
         else:
@@ -109,23 +138,11 @@ def chooseFate(x: int, y: int, x_dots: int, y_dots, gameboard: set):
         else:
             return (x,y)
 
-def iterate(dot: int, x_dots: int, y_dots: int, gameboard: set):
-    fates = set()
-    for (x,y) in gameboard:
-        fates.add(chooseFate(x, y, x_dots, y_dots, gameboard))
-        for (dx, dy) in {(-1,-1), (-1,1), (-1,0), (0,1), (0,-1), (1,1), (1,-1), (1,0)}:
-            fates.add(chooseFate((x + dx) % x_dots, (y + dy) % y_dots, x_dots, y_dots, gameboard))
-    try:
-        fates.remove(0)
-        return fates
-    except:
-        return fates
-
-def drawGrid(dot: int, x_dots: int, y_dots: int, width: int, height: int):
-    for x in range(0, x_dots):
-        pygame.draw.line(screen, grid_colour, (x * dot, 0), (x * dot, height), 1)
-    for y in range(0, y_dots):
-        pygame.draw.line(screen, grid_colour, (0, y * dot), (width, y * dot), 1)
+def drawGrid(board: Board):
+    for x in range(0, board.x_dots):
+        pygame.draw.line(screen, grid_colour, (x * board.dot, 0), (x * board.dot, board.height), 1)
+    for y in range(0, board.y_dots):
+        pygame.draw.line(screen, grid_colour, (0, y * board.dot), (board.width, y * board.dot), 1)
 
 def repeatKey(countdown: int, looper: int, direction: int, dot: int):
     looper = (looper + 1) % (refresh_rate * key_repeat // 1000)
@@ -137,10 +154,10 @@ def repeatKey(countdown: int, looper: int, direction: int, dot: int):
         dot -= 1 if dot > 1 else 0
     return (dot, looper)
 
-def getMouseXY(dot: int, width: int, height: int):
+def getMouseXY(board: Board):
     pos = pygame.mouse.get_pos()
-    x = floor(pos[0]/ dot)
-    y = floor(pos[1]/ dot)
+    x = floor(pos[0]/ board.dot)
+    y = floor(pos[1]/ board.dot)
     return (x,y)
 
 def makeGif(): # take .png files, generate .gif, then delete every .png
@@ -169,19 +186,14 @@ def globallyImportModules(): # this is some voodoo.
     os = __import__("os", globals(), locals())
     imageio = __import__("imageio", globals(), locals())
 
-def pauseScreen(dot: int, x_dots: int, y_dots: int, gameboard: set):
+def pauseScreen(board: Board):
 
-    global width
-    global height
-    global gif_mode
-    global grid_toggle
-    global help_toggle
     k_countdown, k_looper, k_dir = refresh_rate // 3, 0, "no direction"
     click_repeat = False # to allow dragging. reset whenever passing over a new square.
     click_toggle = False # is the mouse button depressed or not?
     last_click = (None, None) # keep track of last clicked square.
 
-    if gif_mode == True:
+    if board.gif_mode == True:
         pygame.display.set_caption("Conway's Game of Life (GIF MODE) (PAUSED)")
     else:
         pygame.display.set_caption("Conway's Game of Life (PAUSED)")
@@ -190,12 +202,12 @@ def pauseScreen(dot: int, x_dots: int, y_dots: int, gameboard: set):
 
         # grid, dots, help splash.
         screen.fill(bg_colour)
-        for (x,y) in gameboard:
-            pygame.draw.rect(screen, dot_colour, (x * dot, y * dot, dot, dot))
-        if grid_toggle:
-            drawGrid(dot, x_dots, y_dots, width, height)
-        if help_toggle:
-            infoSplash()
+        for (x,y) in board.gameboard:
+            pygame.draw.rect(screen, dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
+        if board.grid_toggle:
+            drawGrid(board)
+        if board.help_toggle:
+            infoSplash(board)
 
         # all the event handling happens here.
         for event in pygame.event.get():
@@ -204,47 +216,38 @@ def pauseScreen(dot: int, x_dots: int, y_dots: int, gameboard: set):
 
                 # Play
                 if event.key == pygame.K_SPACE:
-                    help_toggle = False
-                    game(dot, x_dots, y_dots, gameboard)
+                    board.help_toggle = False
+                    game(board)
 
                 # increase square count
                 elif event.key == pygame.K_RIGHT:
                     k_dir = "right"
-                    dot += 1
-                    x_dots = width // dot
-                    y_dots = height // dot
-                    gameboard = set()
+                    board.dot += 1
+                    board.set_dots()
 
                 # decrease square count
                 elif event.key == pygame.K_LEFT:
                     k_dir = "left"
-                    dot -= 1 if dot > 1 else 0
-                    x_dots = width // dot
-                    y_dots = height // dot
-                    gameboard = set()
+                    board.dot -= 1 if board.dot > 1 else 0
+                    board.set_dots()
 
                 elif event.key == pygame.K_g:
-                    grid_toggle ^= True
+                    board.grid_toggle ^= True
                 
                 elif event.key == pygame.K_h:
-                    help_toggle ^= True
+                    board.help_toggle ^= True
 
                 elif event.key == pygame.K_s:
-                    saveBoard("board.sav", dot, x_dots, y_dots, gameboard)
+                    board.save()
                     
                 elif event.key == pygame.K_l:
-                    try:
-                        data = loadBoard("board.sav")
-                        x_dots, y_dots, gameboard = data[0], data[1], data[2]       
-                        dot = ceil(width / x_dots) # size based on width, not height.
-                    except Exception as e: # this should be impossible.
-                        print(f"{e}.")     # error handling is already done in loadBoard().
+                    board.load()
 
                 elif event.key == pygame.K_x:
-                    gameboard = set()
+                    board.gameboard = set()
 
                 elif event.key == pygame.K_r:
-                    gameboard = randomBoard(dot)
+                    board.random()
 
                 # toggle gif mode, change titlebar text, import libraries.
                 elif event.key == pygame.K_i:
@@ -266,8 +269,8 @@ def pauseScreen(dot: int, x_dots: int, y_dots: int, gameboard: set):
                 k_countdown, k_looper, k_dir = refresh_rate // 3, 0, ""
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                (x,y) = getMouseXY(dot, width, height)
-                gameboard ^= {(x,y)}
+                (x,y) = getMouseXY(board)
+                board.gameboard ^= {(x,y)}
                 last_click = (x,y)
                 click_toggle = True
                 click_repeat = True
@@ -277,20 +280,19 @@ def pauseScreen(dot: int, x_dots: int, y_dots: int, gameboard: set):
                 click_repeat = False
 
             elif event.type == pygame.VIDEORESIZE:
-                gameboard = set()
-                width, height = event.w, event.h
-                x_dots, y_dots = width // dot, height // dot
+                board.width, board.height = event.w, event.h
+                board.set_dots()
 
             elif event.type == pygame.QUIT:
                 exit()
 
         # check if on a new square from previous click and that the mouse button is down.
-        if click_repeat == False and getMouseXY(dot, width, height) != last_click and click_toggle == True:
+        if click_repeat == False and getMouseXY(board) != last_click and click_toggle == True:
             click_repeat = True
         else:
-            (x,y) = getMouseXY(dot, width, height)
+            (x,y) = getMouseXY(board)
             if (x,y) != last_click and click_toggle == True:
-                gameboard ^= {(x,y)}
+                board.gameboard ^= {(x,y)}
                 last_click = (x,y)
 
         # if left or right is depressed, start counting down.
@@ -300,71 +302,65 @@ def pauseScreen(dot: int, x_dots: int, y_dots: int, gameboard: set):
         # once the countdown is 0, start actually repeating the key.
         if k_countdown == 0:
             data = repeatKey(k_countdown, k_looper, k_dir, dot)
-            dot, k_looper = data[0], data[1]
-            gameboard = set()
+            board.dot, k_looper = data[0], data[1]
+            board.gameboard = set()
 
         pygame.display.flip()
         clock.tick(refresh_rate)
 
 
-def game(dot: int, x_dots: int, y_dots: int, gameboard: set):
+def game(board):
 
-    global width
-    global height
-    global gif_mode
-    global timestep
-    global grid_toggle
     timer = 0
     filename = 0 # if gif_mode == True, then generate 0.png, 1.png, 2.png, ...
 
-    if gif_mode == True:
+    if board.gif_mode == True:
         pygame.display.set_caption("Conway's Game of Life (GIF MODE) (PLAYING)")
     else:
         pygame.display.set_caption("Conway's Game of Life (PLAYING)")
     
     while True:
 
-        timer = (timer + 1) % timestep
+        timer = (timer + 1) % board.timestep
 
         # grid and dots.
         screen.fill(bg_colour)
-        for (x,y) in gameboard:
-            pygame.draw.rect(screen, dot_colour, (x * dot, y * dot, dot, dot))
-        if grid_toggle:
-            drawGrid(dot, x_dots, y_dots, width, height)
+        for (x,y) in board.gameboard:
+            pygame.draw.rect(screen, dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
+        if board.grid_toggle:
+            drawGrid(board) 
 
         for event in pygame.event.get():
 
             if event.type == pygame.KEYDOWN:
 
                 if event.key == pygame.K_SPACE:
-                    if gif_mode == True and filename > 1:
+                    if board.gif_mode == True and filename > 1:
                         makeGif()
-                    pauseScreen(dot, x_dots, y_dots, gameboard)
+                    pauseScreen(board)
 
                 elif event.key == pygame.K_UP:
-                    timestep -= floor(timestep / 3) if timestep > 2 else 0
+                    board.timestep -= floor(board.timestep / 3) if board.timestep > 2 else 0
 
                 elif event.key == pygame.K_DOWN:
-                    timestep += ceil(timestep / 3)
+                    board.timestep += ceil(board.timestep / 3)
 
                 elif event.key == pygame.K_g:
-                    grid_toggle ^= True
+                    board.grid_toggle ^= True
 
                 elif event.key == pygame.K_x:
-                    gameboard = set()
-                    pauseScreen(dot, x_dots, y_dots, gameboard)
+                    board.gameboard = set()
+                    pauseScreen(board)
 
                 elif event.key == pygame.K_ESCAPE:
                     exit()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                gameboard ^= {getMouseXY(dot, width, height)}
+                board.gameboard ^= {getMouseXY(board)}
 
             elif event.type == pygame.VIDEORESIZE:
-                gameboard = set()
                 width, height = event.w, event.h
-                x_dots, y_dots = width // dot, height // dot
+                board.set_dots()
 
             # always deal with gif generation before quitting.
             elif event.type == pygame.QUIT:
@@ -373,8 +369,8 @@ def game(dot: int, x_dots: int, y_dots: int, gameboard: set):
                 exit()
 
         if timer == 0:
-            gameboard = iterate(dot, x_dots, y_dots, gameboard)
-            if gif_mode == True:
+            board.iterate()
+            if board.gif_mode == True:
                 pygame.image.save(screen, "extras/gifs/" + str(filename) + ".png")
                 filename += 1
 
@@ -382,5 +378,8 @@ def game(dot: int, x_dots: int, y_dots: int, gameboard: set):
         clock.tick(refresh_rate)
 
 if __name__ == "__main__":
-
-    pauseScreen(dot, width // dot, height // dot, set())
+    board = Board()
+    pygame.init()
+    screen = pygame.display.set_mode((board.width, board.height), pygame.RESIZABLE)
+    clock = pygame.time.Clock()
+    pauseScreen(Board())
