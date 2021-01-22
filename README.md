@@ -1,6 +1,8 @@
 # Conway's Game of Life (pygame)
 A simple implementation based on an 'adjacency' algorithm. We only keep track of the live cells and each iteration check the cells adjacent to them. This means that the board size is effectively irrelevant, as long as the number of live cells is limited.
 
+### Arbitrary window resizing coming next update! Just as soon as I finish writing it.
+
 * Click to add 'live' dots to the gameboard. Drawing by dragging is now supported!
 
 * A newly added GIF mode will allow you to easily save your animations as .gifs with ease! (this uses imageio)
