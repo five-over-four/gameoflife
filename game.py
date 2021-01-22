@@ -251,13 +251,13 @@ def pause(board: Board):
                 elif event.key == pygame.K_i:
                     try: 
                         import imageio # needs imageio to work.
-                        gif_mode ^= True
-                        if gif_mode == True:
+                        board.gif_mode ^= True
+                        if board.gif_mode == True:
                             pygame.display.set_caption("Conway's Game of Life (GIF MODE) (PAUSED)")
                         else:
                             pygame.display.set_caption("Conway's Game of Life (PAUSED)")
-                    except:
-                        print("imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
+                    except Exception as e:
+                        print(f"imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
 
                 if event.key == pygame.K_ESCAPE:
                     exit()
