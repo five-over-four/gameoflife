@@ -12,7 +12,7 @@ colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180
 
 # this loads the settings from config.json, or defaults below.
 try:
-    with open("experimental_config.json") as file:
+    with open("config.json") as file:
         data = file.read()
     s = json.loads(data)
     width = s["x_resolution"]
