@@ -104,6 +104,8 @@ class Board():
         except:
             self.gameboard = fates
 
+# these standalone functions could've been also built-in to the Board class, but i felt
+# that it would be a bit excessive, and not necessarily make the code any more readable.
 
 # display the controls page at the *center* of the screen.
 def infoSplash(board: Board):
@@ -113,7 +115,7 @@ def infoSplash(board: Board):
         screen.blit(pygame.image.load("extras/infosplash.png"), (x_pos, y_pos))
     except:
         font = pygame.font.SysFont("courier bold", 30)
-        text_drawing = font.render("infosplash.png not found!", True, (0,0,0))
+        text_drawing = font.render("extras/infosplash.png not found!", True, (0,0,0))
         screen.blit(text_drawing, (0, 0))
 
 def countNeighbors(x: int, y: int, board: Board):
@@ -161,6 +163,8 @@ def getMouseXY(board: Board):
     return (x,y)
 
 def makeGif(): # take .png files, generate .gif, then delete every .png
+    import os
+    import imageio
     dir = "extras/gifs/"
     image_folder = os.fsencode(dir)
     gif_name = 0 # iterate through names 0.gif, 1.gif, ...
@@ -180,13 +184,7 @@ def makeGif(): # take .png files, generate .gif, then delete every .png
         if filename.endswith(".png"):
             os.remove(dir + filename)
 
-def globallyImportModules(): # this is some voodoo.
-    global os
-    global imageio
-    os = __import__("os", globals(), locals())
-    imageio = __import__("imageio", globals(), locals())
-
-def pauseScreen(board: Board):
+def pause(board: Board):
 
     k_countdown, k_looper, k_dir = refresh_rate // 3, 0, "no direction"
     click_repeat = False # to allow dragging. reset whenever passing over a new square.
@@ -251,8 +249,8 @@ def pauseScreen(board: Board):
 
                 # toggle gif mode, change titlebar text, import libraries.
                 elif event.key == pygame.K_i:
-                    try: # needs imageio to work.
-                        globallyImportModules()
+                    try: 
+                        import imageio # needs imageio to work.
                         gif_mode ^= True
                         if gif_mode == True:
                             pygame.display.set_caption("Conway's Game of Life (GIF MODE) (PAUSED)")
@@ -309,7 +307,6 @@ def pauseScreen(board: Board):
         pygame.display.flip()
         clock.tick(refresh_rate)
 
-
 def game(board):
 
     timer = 0
@@ -329,7 +326,7 @@ def game(board):
         for (x,y) in board.gameboard:
             pygame.draw.rect(screen, dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
         if board.grid_toggle:
-            drawGrid(board) 
+            drawGrid(board)
 
         for event in pygame.event.get():
 
@@ -338,7 +335,7 @@ def game(board):
                 if event.key == pygame.K_SPACE:
                     if board.gif_mode == True and filename > 1:
                         makeGif()
-                    pauseScreen(board)
+                    pause(board)
 
                 elif event.key == pygame.K_UP:
                     board.timestep -= board.timestep // 3 if board.timestep > 2 else 0
@@ -351,7 +348,7 @@ def game(board):
 
                 elif event.key == pygame.K_x:
                     board.gameboard = set()
-                    pauseScreen(board)
+                    pause(board)
 
                 elif event.key == pygame.K_ESCAPE:
                     exit()
@@ -383,4 +380,4 @@ if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode((board.width, board.height), pygame.RESIZABLE)
     clock = pygame.time.Clock()
-    pauseScreen(board)
+    pause(board)
