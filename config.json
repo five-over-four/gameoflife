@@ -1,14 +1,14 @@
 {
     "x_resolution": 600,
-    "y_resolution": 600,
-    "pixel_size": 10,
-    "show_controls_at_launch": 0,
+    "y_resolution": 400,
+    "pixel_size": 14,
+    "show_controls_at_launch": 1,
     "default_show_grid": 0,
     "default_timestep": 30,
     "screen_refresh_rate": 60,
     "key_repeat_interval": 30,
-    "gif_speed": 0.2,
-    "dot_colour": "black",
-    "bg_colour": "white",
-    "grid_colour": "light_grey"
+    "gif_speed": 0.1,
+    "dot_colour": "white",
+    "bg_colour": "black",
+    "grid_colour": "white"
 }
