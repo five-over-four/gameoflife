@@ -164,10 +164,11 @@ def chooseFate(x: int, y: int):
             return (x,y)
 
 def drawGrid():
-    for x in range(0, board.x_dots):
-        pygame.draw.line(screen, settings.grid_colour, (x * board.dot, 0), (x * board.dot, board.height), 1)
-    for y in range(0, board.y_dots):
-        pygame.draw.line(screen, settings.grid_colour, (0, y * board.dot), (board.width, y * board.dot), 1)
+    if board.dot > 1:
+        for x in range(0, board.x_dots):
+            pygame.draw.line(screen, settings.grid_colour, (x * board.dot, 0), (x * board.dot, board.height), 1)
+        for y in range(0, board.y_dots):
+            pygame.draw.line(screen, settings.grid_colour, (0, y * board.dot), (board.width, y * board.dot), 1)
 
 def repeatKey(countdown: int, looper: int, direction: int):
     looper = (looper + 1) % (settings.refresh_rate * settings.key_repeat // 1000)
@@ -225,7 +226,7 @@ def pause():
         screen.fill(settings.bg_colour)
         for (x,y) in board.gameboard:
             pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
-        if board.grid_toggle:
+        if board.grid_toggle: # grid covers the whole screen at 1 pixel.
             drawGrid()
         if board.help_toggle:
             infoSplash()
