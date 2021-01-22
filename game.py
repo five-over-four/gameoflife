@@ -71,7 +71,7 @@ class Board():
         with open("board.sav", "a") as file:
             for y in range(self.y_dots):
                 for x in range(self.x_dots):
-                    if (x,y) not in selrf.gameboard:
+                    if (x,y) not in self.gameboard:
                         file.write("0")
                     else:
                         file.write("1")
