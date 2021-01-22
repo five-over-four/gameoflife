@@ -24,7 +24,7 @@ In config.json, the bottom three settings let you choose your own colour scheme.
 
 | Green, Dark Green | Red, Yellow |
 | --- | --- |
-| ![](https://i.imgur.com/CY5lPSD.gif) | ![woops](https://i.imgur.com/MtR1k8K.gif) |
+| ![](https://i.imgur.com/CY5lPSD.gif) | ![](https://i.imgur.com/MtR1k8K.gif) |
 
 ## GIF mode
 By pressing 'I' while paused, every time you start playing, you will get a new animated .gif file in your extras/gifs directory! Just draw a shape, load an existing board, or randomise it, press play, and once you pause, a new animation awaits. The setting "gif_speed" in config.json determines how much time passes (in seconds) between each frame in the final animation. Press 'I' again to disable GIF mode.

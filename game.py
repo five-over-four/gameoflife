@@ -1,5 +1,6 @@
 import pygame
 import json
+import os
 from math import ceil
 from random import randint, choice
 
@@ -10,45 +11,64 @@ colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180
             "dark_blue": (0,0,150), "grey": (130,130,130), "dark_grey": (60,60,60)
           }
 
-# this loads the settings from config.json, or defaults below.
-try:
-    with open("config.json") as file:
-        data = file.read()
-    s = json.loads(data)
-    refresh_rate = s["screen_refresh_rate"]
-    key_repeat = s["key_repeat_interval"]
-    gif_speed = float(s["gif_speed"])
-    dot_colour = colours[s["dot_colour"]]
-    bg_colour = colours[s["bg_colour"]]
-    grid_colour = colours[s["grid_colour"]]
-except:
-    refresh_rate = 60
-    key_repeat = 50
-    dot_colour = colours["black"]
-    bg_colour = colours["white"]
-    grid_colour = colours["light_grey"]
-
-# this class deals with the movement of the board and all of its 'physical' attributes
-# such as resolution, dot size, dot count, toggles. struct.
-class Board():
+# this singleton class loads the mechanical settings as shown below and makes them globally accessible.
+class Settings:
     def __init__(self):
         try:
-            with open("config.json") as file:
+            file = open("dev_config.json")
+            self.config_file = "dev_config.json"
+        except:
+            try:
+                file = open("config.json")
+                self.config_file = "config.json"
+            except:
+                self.config_file = None
+        
+    def load(self):
+        if self.config_file != None:
+            with open(self.config_file) as file:
                 data = file.read()
             s = json.loads(data)
+            self.refresh_rate = s["screen_refresh_rate"]
+            self.key_repeat = s["key_repeat_interval"]
+            self.gif_speed = float(s["gif_speed"])
+            self.dot_colour = colours[s["dot_colour"]]
+            self.bg_colour = colours[s["bg_colour"]]
+            self.grid_colour = colours[s["grid_colour"]]
             self.width = s["x_resolution"]
             self.height = s["y_resolution"]
             self.dot = s["pixel_size"]
             self.timestep = s["default_timestep"]
             self.grid_toggle = bool(s["default_show_grid"])
             self.help_toggle = bool(s["show_controls_at_launch"])
-        except:
+        else:
+            self.refresh_rate = 60
+            self.key_repeat = 50
+            self.gif_speed = 0.2
+            self.dot_colour = colours["white"]
+            self.bg_colour = colours["black"]
+            self.grid_colour = colours["white"]
             self.width = 600
             self.height = 400
-            self.dot = 10
+            self.dot = 8
             self.grid_toggle = True
             self.help_toggle = True
             self.timestep = 30
+
+# initialise the settings for global use.
+settings = Settings()
+settings.load()
+
+# this class deals with the movement of the board and all of its 'physical' attributes
+# such as resolution, dot size, dot count, toggles. also singleton. global.
+class Board():
+    def __init__(self):
+        self.width = settings.width
+        self.height = settings.height
+        self.dot = settings.dot
+        self.timestep = settings.timestep
+        self.grid_toggle = settings.grid_toggle
+        self.help_toggle = settings.help_toggle
         self.x_dots = self.width // self.dot
         self.y_dots = self.height // self.dot
         self.gameboard = set()
@@ -95,20 +115,23 @@ class Board():
     def iterate(self):
         fates = set()
         for (x,y) in self.gameboard:
-            fates.add(chooseFate(x, y, self))
+            fates.add(chooseFate(x, y))
             for (dx, dy) in {(-1,-1), (-1,1), (-1,0), (0,1), (0,-1), (1,1), (1,-1), (1,0)}:
-                fates.add(chooseFate((x + dx) % self.x_dots, (y + dy) % self.y_dots, self))
+                fates.add(chooseFate((x + dx) % self.x_dots, (y + dy) % self.y_dots))
         try:
             fates.remove(0)
             self.gameboard = fates
         except:
             self.gameboard = fates
 
+# initialise for global use.
+board = Board()
+
 # these standalone functions could've been also built-in to the Board class, but i felt
 # that it would be a bit excessive, and not necessarily make the code any more readable.
 
 # display the controls page at the *center* of the screen.
-def infoSplash(board: Board):
+def infoSplash():
     x_pos = (board.width - 400) // 2 # the splash image is 400 x 399.
     y_pos = (board.height - 399) // 2
     try:
@@ -118,7 +141,7 @@ def infoSplash(board: Board):
         text_drawing = font.render("extras/infosplash.png not found!", True, (0,0,0))
         screen.blit(text_drawing, (0, 0))
 
-def countNeighbors(x: int, y: int, board: Board):
+def countNeighbors(x: int, y: int):
     neighbors = 0
     for (dx, dy) in {(-1,-1), (-1,1), (-1,0), (0,1), (0,-1), (1,1), (1,-1), (1,0)}:
         if ((x + dx) % board.x_dots, (y + dy) % board.y_dots) in board.gameboard: # loop around edges.
@@ -127,8 +150,8 @@ def countNeighbors(x: int, y: int, board: Board):
                 return neighbors
     return neighbors
 
-def chooseFate(x: int, y: int, board: Board):
-    neighbors = countNeighbors(x, y, board)
+def chooseFate(x: int, y: int):
+    neighbors = countNeighbors(x, y)
     if (x,y) not in board.gameboard:
         if neighbors == 3:
             return (x,y)
@@ -140,30 +163,29 @@ def chooseFate(x: int, y: int, board: Board):
         else:
             return (x,y)
 
-def drawGrid(board: Board):
+def drawGrid():
     for x in range(0, board.x_dots):
-        pygame.draw.line(screen, grid_colour, (x * board.dot, 0), (x * board.dot, board.height), 1)
+        pygame.draw.line(screen, settings.grid_colour, (x * board.dot, 0), (x * board.dot, board.height), 1)
     for y in range(0, board.y_dots):
-        pygame.draw.line(screen, grid_colour, (0, y * board.dot), (board.width, y * board.dot), 1)
+        pygame.draw.line(screen, settings.grid_colour, (0, y * board.dot), (board.width, y * board.dot), 1)
 
-def repeatKey(countdown: int, looper: int, direction: int, dot: int):
-    looper = (looper + 1) % (refresh_rate * key_repeat // 1000)
+def repeatKey(countdown: int, looper: int, direction: int):
+    looper = (looper + 1) % (settings.refresh_rate * settings.key_repeat // 1000)
     if looper == 0 and direction == "right":
         countdown -= 1 if countdown > 0 else 0
-        dot += 1
-    elif looper % key_repeat == 0 and direction == "left":
+        board.dot += 1
+    elif looper % settings.key_repeat == 0 and direction == "left":
         countdown -= 1 if countdown > 0 else 0
-        dot -= 1 if dot > 1 else 0
-    return (dot, looper)
+        board.dot -= 1 if board.dot > 1 else 0
+    return looper
 
-def getMouseXY(board: Board):
+def getMouseXY():
     pos = pygame.mouse.get_pos()
     x = pos[0] // board.dot
     y = pos[1] // board.dot
     return (x,y)
 
 def makeGif(): # take .png files, generate .gif, then delete every .png
-    import os
     import imageio
     dir = "extras/gifs/"
     image_folder = os.fsencode(dir)
@@ -178,17 +200,18 @@ def makeGif(): # take .png files, generate .gif, then delete every .png
 
     files = sorted(files, key = lambda x: int(x.split(".")[0])) # make .gif.
     images = list(map(lambda filename: imageio.imread(dir + filename), files))
-    imageio.mimsave(os.path.join(dir + str(gif_name) + ".gif"), images, duration = gif_speed)
+    imageio.mimsave(os.path.join(dir + str(gif_name) + ".gif"), images, duration = settings.gif_speed)
 
     for filename in os.listdir(dir): # delete .png files.
         if filename.endswith(".png"):
             os.remove(dir + filename)
 
-def pause(board: Board):
+def pause():
 
-    k_countdown, k_looper, k_dir = refresh_rate // 3, 0, "no direction"
+    settings.load() # check for changes in config.json and load them.
+    k_countdown, k_looper, k_dir = settings.refresh_rate // 3, 0, "no direction"
     click_repeat = False # to allow dragging. reset whenever passing over a new square.
-    click_toggle = False # is the mouse button depressed or not?
+    click_toggle = False # True if mousebutton is down, False otherwise.
     last_click = (None, None) # keep track of last clicked square.
 
     if board.gif_mode == True:
@@ -199,13 +222,13 @@ def pause(board: Board):
     while True:
 
         # grid, dots, help splash.
-        screen.fill(bg_colour)
+        screen.fill(settings.bg_colour)
         for (x,y) in board.gameboard:
-            pygame.draw.rect(screen, dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
+            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
         if board.grid_toggle:
-            drawGrid(board)
+            drawGrid()
         if board.help_toggle:
-            infoSplash(board)
+            infoSplash()
 
         # all the event handling happens here.
         for event in pygame.event.get():
@@ -215,7 +238,7 @@ def pause(board: Board):
                 # Play
                 if event.key == pygame.K_SPACE:
                     board.help_toggle = False
-                    game(board)
+                    game()
 
                 # increase square count
                 elif event.key == pygame.K_RIGHT:
@@ -263,11 +286,11 @@ def pause(board: Board):
                     exit()
 
             elif event.type == pygame.KEYUP:
-                k_countdown, k_looper, k_dir = refresh_rate // 3, 0, ""
+                k_countdown, k_looper, k_dir = settings.refresh_rate // 3, 0, ""
 
             # placing a new dot by clicking.
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                (x,y) = getMouseXY(board)
+                (x,y) = getMouseXY()
                 board.gameboard ^= {(x,y)}
                 last_click = (x,y)
                 click_toggle = True
@@ -286,10 +309,10 @@ def pause(board: Board):
                 exit()
 
         # check if on a new square from previous click and that the mouse button is down.
-        if click_repeat == False and getMouseXY(board) != last_click and click_toggle == True:
+        if click_repeat == False and getMouseXY() != last_click and click_toggle == True:
             click_repeat = True
         else:
-            (x,y) = getMouseXY(board)
+            (x,y) = getMouseXY()
             if (x,y) != last_click and click_toggle == True:
                 board.gameboard ^= {(x,y)}
                 last_click = (x,y)
@@ -300,15 +323,15 @@ def pause(board: Board):
             
         # once the countdown is 0, start actually repeating the key.
         if k_countdown == 0:
-            data = repeatKey(k_countdown, k_looper, k_dir, board.dot)
-            board.dot, k_looper = data[0], data[1]
+            k_looper = repeatKey(k_countdown, k_looper, k_dir)
             board.set_dots()
 
         pygame.display.flip()
-        clock.tick(refresh_rate)
+        clock.tick(settings.refresh_rate)
 
-def game(board):
+def game():
 
+    settings.load() # check for changes in config.json and load them.
     timer = 0
     filename = 0 # if gif_mode == True, then generate 0.png, 1.png, 2.png, ...
 
@@ -322,11 +345,11 @@ def game(board):
         timer = (timer + 1) % board.timestep
 
         # grid and dots.
-        screen.fill(bg_colour)
+        screen.fill(settings.bg_colour)
         for (x,y) in board.gameboard:
-            pygame.draw.rect(screen, dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
+            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
         if board.grid_toggle:
-            drawGrid(board)
+            drawGrid()
 
         for event in pygame.event.get():
 
@@ -335,7 +358,7 @@ def game(board):
                 if event.key == pygame.K_SPACE:
                     if board.gif_mode == True and filename > 1:
                         makeGif()
-                    pause(board)
+                    pause()
 
                 elif event.key == pygame.K_UP:
                     board.timestep -= board.timestep // 3 if board.timestep > 2 else 0
@@ -348,21 +371,21 @@ def game(board):
 
                 elif event.key == pygame.K_x:
                     board.gameboard = set()
-                    pause(board)
+                    pause()
 
                 elif event.key == pygame.K_ESCAPE:
                     exit()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                board.gameboard ^= {getMouseXY(board)}
+                board.gameboard ^= {getMouseXY()}
 
             elif event.type == pygame.VIDEORESIZE:
-                width, height = event.w, event.h
+                board.width, board.height = event.w, event.h
                 board.set_dots()
 
             # always deal with gif generation before quitting.
             elif event.type == pygame.QUIT:
-                if gif_mode == True and filename > 1:
+                if board.gif_mode == True and filename > 1:
                     makeGif()
                 exit()
 
@@ -373,11 +396,10 @@ def game(board):
                 filename += 1
 
         pygame.display.flip()
-        clock.tick(refresh_rate)
+        clock.tick(settings.refresh_rate)
 
 if __name__ == "__main__":
-    board = Board()
     pygame.init()
     screen = pygame.display.set_mode((board.width, board.height), pygame.RESIZABLE)
     clock = pygame.time.Clock()
-    pause(board)
+    pause()
