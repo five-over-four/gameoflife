@@ -52,6 +52,4 @@ You can also save your game states into a file or even import a file of your own
 * You can draw by holding down the mouse button while paused.
 * The dot size and speed of animation are completely controllable.
 
-## Future plans
-* One-button insertion of gliders and other standard structures.
-* Possibly dragging the board around.
+![](https://i.imgur.com/OakHazR.gif)
