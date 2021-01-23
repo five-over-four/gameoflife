@@ -127,18 +127,16 @@ class Board():
 # initialise for global use.
 board = Board()
 
-# these standalone functions could've been also built-in to the Board class, but i felt
-# that it would be a bit excessive, and not necessarily make the code any more readable.
-
 # display the controls page at the *center* of the screen.
 def infoSplash():
     x_pos = (board.width - 400) // 2 # the splash image is 400 x 399.
     y_pos = (board.height - 399) // 2
+    colour = [(x + 127) % 255 for x in settings.bg_colour] # make sure text doesn't blend into bg.
     try:
         screen.blit(pygame.image.load("extras/infosplash.png"), (x_pos, y_pos))
     except:
         font = pygame.font.SysFont("courier bold", 30)
-        text_drawing = font.render("extras/infosplash.png not found!", True, (0,0,0))
+        text_drawing = font.render("extras/infosplash.png not found!", True, colour)
         screen.blit(text_drawing, (0, 0))
 
 def countNeighbors(x: int, y: int):
