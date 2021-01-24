@@ -14,13 +14,14 @@ colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180
 # this singleton class loads the mechanical settings as shown below and makes them globally accessible.
 class Settings:
     def __init__(self):
+        self.path = os.path.dirname(os.path.realpath(__file__))
         try:
-            file = open("dev_config.json")
-            self.config_file = "dev_config.json"
+            file = open(self.path + "/dev_config.json")
+            self.config_file = self.path + "/dev_config.json"
         except:
             try:
-                file = open("config.json")
-                self.config_file = "config.json"
+                file = open(self.path + "/config.json")
+                self.config_file = self.path + "/config.json"
             except:
                 self.config_file = None
         
@@ -86,9 +87,9 @@ class Board():
         self.gameboard = set()
 
     def save(self):
-        with open("board.sav", "w") as overwrite:
+        with open(settings.path + "/board.sav", "w") as overwrite:
             overwrite.write("")
-        with open("board.sav", "a") as file:
+        with open(settings.path + "/board.sav", "a") as file:
             for y in range(self.y_dots):
                 for x in range(self.x_dots):
                     if (x,y) not in self.gameboard:
@@ -99,7 +100,7 @@ class Board():
                 
     def load(self):
         try:
-            with open("board.sav") as file:
+            with open(settings.path + "/board.sav") as file:
                 lines = file.readlines()
             self.gameboard = set()
             self.y_dots = len(lines)
@@ -133,7 +134,7 @@ def infoSplash():
     y_pos = (board.height - 399) // 2
     colour = [(x + 127) % 255 for x in settings.bg_colour] # make sure text doesn't blend into bg.
     try:
-        screen.blit(pygame.image.load("extras/infosplash.png"), (x_pos, y_pos))
+        screen.blit(pygame.image.load(settings.path + "/extras/infosplash.png"), (x_pos, y_pos))
     except:
         font = pygame.font.SysFont("courier bold", 30)
         text_drawing = font.render("extras/infosplash.png not found!", True, colour)
@@ -186,7 +187,7 @@ def getMouseXY():
 
 def makeGif(): # take .png files, generate .gif, then delete every .png
     import imageio
-    dir = "extras/gifs/"
+    dir = settings.path + "/extras/gifs/"
     image_folder = os.fsencode(dir)
     gif_name = 0 # iterate through names 0.gif, 1.gif, ...
     files = []
@@ -391,7 +392,7 @@ def game():
         if timer == 0:
             board.iterate()
             if board.gif_mode == True:
-                pygame.image.save(screen, "extras/gifs/" + str(filename) + ".png")
+                pygame.image.save(screen, settings.path + "/extras/gifs/" + str(filename) + ".png")
                 filename += 1
 
         pygame.display.flip()
