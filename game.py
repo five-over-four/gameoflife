@@ -385,6 +385,9 @@ def game():
                     board.gameboard = set()
                     pause()
 
+                elif event.key == pygame.K_RETURN:
+                    board.draw_mode = (board.draw_mode + 1) % 3
+
                 elif event.key == pygame.K_ESCAPE:
                     exit()
 
