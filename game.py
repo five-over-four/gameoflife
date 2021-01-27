@@ -179,6 +179,10 @@ def drawDots():
         for (x,y) in board.gameboard:
             pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
             pygame.draw.rect(screen, settings.bg_colour, (x * board.dot+border, y * board.dot+border, board.dot-2*border, board.dot-2*border))
+    elif board.draw_mode == 2: # smaller squares.
+        border = 1 + board.dot // 10
+        for (x,y) in board.gameboard:
+            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot+border, y * board.dot+border, board.dot-2*border, board.dot-2*border))
     else: # horizontal stripes.
         for (x,y) in board.gameboard:
             pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot // 2))
@@ -294,7 +298,7 @@ def pause():
                         print(f"imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
 
                 elif event.key == pygame.K_RETURN:
-                    board.draw_mode = (board.draw_mode + 1) % 3
+                    board.draw_mode = (board.draw_mode + 1) % 4
 
                 elif event.key == pygame.K_ESCAPE:
                     exit()
@@ -386,7 +390,7 @@ def game():
                     pause()
 
                 elif event.key == pygame.K_RETURN:
-                    board.draw_mode = (board.draw_mode + 1) % 3
+                    board.draw_mode = (board.draw_mode + 1) % 4
 
                 elif event.key == pygame.K_ESCAPE:
                     exit()
