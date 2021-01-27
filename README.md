@@ -7,6 +7,8 @@ A simple implementation based on an 'adjacency' algorithm. We only keep track of
 
 * A newly added GIF mode will allow you to easily save your animations as GIFs with ease! (this uses imageio)
 
+* Change the style of dots on the board by pressing Enter.
+
 ## Controls
     Space      -  Play/Pause  
     Up/Down    -  Slow down/Speed up animation  
@@ -17,6 +19,7 @@ A simple implementation based on an 'adjacency' algorithm. We only keep track of
     S/L        -  Save or Load a gameboard. Only works while paused.  
     X          -  Clear the board.  
     R          -  Create random noise.  
+    Enter      -  Switch dot style.
     Esc        -  Exit.
 
 ## Colours
@@ -50,6 +53,6 @@ You can also save your game states into a file or even import a file of your own
 * The built-in GIF mode will allow you to share your patterns with others easily!
 * The window is resizable at any time.
 * You can draw by holding down the mouse button while paused.
-* The dot size and speed of animation are completely controllable.
+* The dot size, style, and speed of animation are completely controllable.
 
 ![](https://i.imgur.com/OakHazR.gif)
