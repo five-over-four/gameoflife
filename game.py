@@ -56,14 +56,10 @@ class Settings:
             self.help_toggle = True
             self.timestep = 30
 
-# initialise the settings for global use.
-settings = Settings()
-settings.load()
-
 # this class deals with the movement of the board and all of its 'physical' attributes
 # such as resolution, dot size, dot count, toggles. also singleton. global.
 class Board():
-    def __init__(self):
+    def __init__(self, settings: Settings):
         self.width = settings.width
         self.height = settings.height
         self.dot = settings.dot
@@ -74,6 +70,8 @@ class Board():
         self.y_dots = self.height // self.dot
         self.gameboard = set()
         self.gif_mode = False
+        self.title = "Conway's Game of Life"
+        self.draw_mode = 0 # styles of dot drawing.
 
     # generate 'random' board layout.
     def random(self):
@@ -125,20 +123,23 @@ class Board():
         except:
             self.gameboard = fates
 
-# initialise for global use.
-board = Board()
+# initialise the settings and board for global use.
+settings = Settings()
+settings.load()
+board = Board(settings)
 
 # display the controls page at the *center* of the screen.
 def infoSplash():
-    x_pos = (board.width - 400) // 2 # the splash image is 400 x 399.
-    y_pos = (board.height - 399) // 2
-    colour = [(x + 127) % 255 for x in settings.bg_colour] # make sure text doesn't blend into bg.
-    try:
-        screen.blit(pygame.image.load(settings.path + "/extras/infosplash.png"), (x_pos, y_pos))
-    except:
-        font = pygame.font.SysFont("courier bold", 30)
-        text_drawing = font.render("extras/infosplash.png not found!", True, colour)
-        screen.blit(text_drawing, (0, 0))
+    if board.help_toggle == True:
+        x_pos = (board.width - 400) // 2 # the splash image is 400 x 399.
+        y_pos = (board.height - 399) // 2
+        colour = [(x + 127) % 255 for x in settings.bg_colour] # make sure text doesn't blend into bg.
+        try:
+            screen.blit(pygame.image.load(settings.path + "/extras/infosplash.png"), (x_pos, y_pos))
+        except:
+            font = pygame.font.SysFont("courier bold", 30)
+            text_drawing = font.render("extras/infosplash.png not found!", True, colour)
+            screen.blit(text_drawing, (0, 0))
 
 def countNeighbors(x: int, y: int):
     neighbors = 0
@@ -163,11 +164,24 @@ def chooseFate(x: int, y: int):
             return (x,y)
 
 def drawGrid():
-    if board.dot > 1:
+    if board.grid_toggle == True and board.dot > 1:
         for x in range(0, board.x_dots):
             pygame.draw.line(screen, settings.grid_colour, (x * board.dot, 0), (x * board.dot, board.height), 1)
         for y in range(0, board.y_dots):
             pygame.draw.line(screen, settings.grid_colour, (0, y * board.dot), (board.width, y * board.dot), 1)
+
+def drawDots():
+    if board.draw_mode == 0: # standard mode.
+        for (x,y) in board.gameboard:
+            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
+    elif board.draw_mode == 1: # hollow dots.
+        border = 1 + board.dot // 10 # arbitrary scaling rule.
+        for (x,y) in board.gameboard:
+            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
+            pygame.draw.rect(screen, settings.bg_colour, (x * board.dot+border, y * board.dot+border, board.dot-2*border, board.dot-2*border))
+    else: # horizontal stripes.
+        for (x,y) in board.gameboard:
+            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot // 2))
 
 def repeatKey(countdown: int, looper: int, direction: int):
     looper = (looper + 1) % (settings.refresh_rate * settings.key_repeat // 1000)
@@ -223,12 +237,9 @@ def pause():
 
         # grid, dots, help splash.
         screen.fill(settings.bg_colour)
-        for (x,y) in board.gameboard:
-            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
-        if board.grid_toggle: # grid covers the whole screen at 1 pixel.
-            drawGrid()
-        if board.help_toggle:
-            infoSplash()
+        drawDots() # draw_mode, grid_toggle, help_toggle checked inside the function calls.
+        drawGrid()
+        infoSplash()
 
         # all the event handling happens here.
         for event in pygame.event.get():
@@ -282,7 +293,10 @@ def pause():
                     except Exception as e:
                         print(f"imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
 
-                if event.key == pygame.K_ESCAPE:
+                elif event.key == pygame.K_RETURN:
+                    board.draw_mode = (board.draw_mode + 1) % 3
+
+                elif event.key == pygame.K_ESCAPE:
                     exit()
 
             elif event.type == pygame.KEYUP:
@@ -346,10 +360,8 @@ def game():
 
         # grid and dots.
         screen.fill(settings.bg_colour)
-        for (x,y) in board.gameboard:
-            pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot))
-        if board.grid_toggle:
-            drawGrid()
+        drawDots()
+        drawGrid()
 
         for event in pygame.event.get():
 
