@@ -2,7 +2,7 @@ import pygame
 import json
 import os
 from math import ceil
-from random import randint, choice
+from random import randint
 
 # colour standards. customise your own in config.json.
 colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180), \
@@ -15,46 +15,53 @@ colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180
 class Settings:
     def __init__(self):
         self.path = os.path.dirname(os.path.realpath(__file__))
-        try:
+        config_files = os.listdir()
+        if "dev_config.json" in config_files:
             file = open(self.path + "/dev_config.json")
             self.config_file = self.path + "/dev_config.json"
-        except:
-            try:
-                file = open(self.path + "/config.json")
-                self.config_file = self.path + "/config.json"
-            except:
-                self.config_file = None
+        elif "config.json" in config_files:
+            file = open(self.path + "/config.json")
+            self.config_file = self.path + "/config.json"
+        else:
+            self.config_file = None
+            
+    def loadDefaults(self):
+        self.refresh_rate = 60
+        self.key_repeat = 50
+        self.gif_speed = 0.2
+        self.dot_colour = colours["white"]
+        self.bg_colour = colours["black"]
+        self.grid_colour = colours["white"]
+        self.width = 800
+        self.height = 600
+        self.dot = 12
+        self.grid_toggle = True
+        self.help_toggle = True
+        self.timestep = 30
         
     def load(self):
         if self.config_file != None:
             with open(self.config_file) as file:
                 data = file.read()
             s = json.loads(data)
-            self.refresh_rate = s["screen_refresh_rate"]
-            self.key_repeat = s["key_repeat_interval"]
-            self.gif_speed = float(s["gif_speed"])
-            self.dot_colour = colours[s["dot_colour"]]
-            self.bg_colour = colours[s["bg_colour"]]
-            self.grid_colour = colours[s["grid_colour"]]
-            self.width = s["x_resolution"]
-            self.height = s["y_resolution"]
-            self.dot = s["pixel_size"]
-            self.timestep = s["default_timestep"]
-            self.grid_toggle = bool(s["default_show_grid"])
-            self.help_toggle = bool(s["show_controls_at_launch"])
+            try:
+                self.refresh_rate = s["screen_refresh_rate"]
+                self.key_repeat = s["key_repeat_interval"]
+                self.gif_speed = float(s["gif_speed"])
+                self.dot_colour = colours[s["dot_colour"]]
+                self.bg_colour = colours[s["bg_colour"]]
+                self.grid_colour = colours[s["grid_colour"]]
+                self.width = s["x_resolution"]
+                self.height = s["y_resolution"]
+                self.dot = s["pixel_size"]
+                self.timestep = s["default_timestep"]
+                self.grid_toggle = bool(s["default_show_grid"])
+                self.help_toggle = bool(s["show_controls_at_launch"])
+            except: # these errors are thrown all over, so the actual message isn't useful.
+                print("config file contains erroneous data.\nloading defaults...")
+                self.loadDefaults()
         else:
-            self.refresh_rate = 60
-            self.key_repeat = 50
-            self.gif_speed = 0.2
-            self.dot_colour = colours["white"]
-            self.bg_colour = colours["black"]
-            self.grid_colour = colours["white"]
-            self.width = 600
-            self.height = 400
-            self.dot = 8
-            self.grid_toggle = True
-            self.help_toggle = True
-            self.timestep = 30
+            self.loadDefaults()
 
 # this class deals with the movement of the board and all of its 'physical' attributes
 # such as resolution, dot size, dot count, toggles. also singleton. global.
@@ -71,13 +78,12 @@ class Board():
         self.gameboard = set()
         self.gif_mode = False
         self.title = "Conway's Game of Life"
-        self.draw_mode = 0 # styles of dot drawing.
+        self.draw_mode = 0 # styles of dot drawing, currently 0 to 3 mod 4, easy to add more.
 
     # generate 'random' board layout.
     def random(self):
-        density = choice([(0,1), (0,0,1), (0,0,0,1)]) # 50%, 33%, or 25% population of the board at random.
-        n_dots = self.x_dots * self.y_dots
-        self.gameboard = {((randint(0, self.width // self.dot - 1), randint(0, self.height // self.dot - 1))) for x in range(n_dots) if choice(density) == 1}
+        density = randint(2,5) # roughly 50%, 33%, 25%, 20% of the board dotted.
+        self.gameboard = {(x, y) for x in range(self.x_dots) for y in range(self.y_dots) if randint(1,density) == 1}
 
     def set_dots(self):
         self.x_dots = self.width // self.dot
