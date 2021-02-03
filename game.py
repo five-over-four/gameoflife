@@ -15,11 +15,11 @@ colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180
 class Settings:
     def __init__(self):
         self.path = os.path.dirname(os.path.realpath(__file__))
-        config_files = os.listdir()
-        if "dev_config.json" in config_files:
+        self.config_files = os.listdir(self.path)
+        if "dev_config.json" in self.config_files:
             file = open(self.path + "/dev_config.json")
             self.config_file = self.path + "/dev_config.json"
-        elif "config.json" in config_files:
+        elif "config.json" in self.config_files:
             file = open(self.path + "/config.json")
             self.config_file = self.path + "/config.json"
         else:
@@ -123,18 +123,15 @@ class Board():
             fates.add(chooseFate(x, y))
             for (dx, dy) in {(-1,-1), (-1,1), (-1,0), (0,1), (0,-1), (1,1), (1,-1), (1,0)}:
                 fates.add(chooseFate((x + dx) % self.x_dots, (y + dy) % self.y_dots))
-        try:
-            fates.remove(0)
-            self.gameboard = fates
-        except:
-            self.gameboard = fates
+        fates.discard(None) # this is returned if not alive.
+        self.gameboard = fates
 
 # initialise the settings and board for global use.
 settings = Settings()
 settings.load()
 board = Board(settings)
 
-# display the controls page at the *center* of the screen.
+# display the controls page at the center of the screen.
 def infoSplash():
     if board.help_toggle == True:
         x_pos = (board.width - 400) // 2 # the splash image is 400 x 399.
@@ -161,12 +158,8 @@ def chooseFate(x: int, y: int):
     if (x,y) not in board.gameboard:
         if neighbors == 3:
             return (x,y)
-        else:
-            return 0
     else:
-        if neighbors < 2 or neighbors > 3:
-            return 0
-        else:
+        if 2 <= neighbors <= 3:
             return (x,y)
 
 def drawGrid():
