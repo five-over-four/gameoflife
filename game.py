@@ -15,16 +15,21 @@ colours = { "black": (0,0,0), "white": (255,255,255), "light_grey": (180,180,180
 class Settings:
     def __init__(self):
         self.path = os.path.dirname(os.path.realpath(__file__))
-        self.config_files = os.listdir(self.path)
-        if "dev_config.json" in self.config_files:
+        self.directory = os.listdir(self.path)
+        if "dev_config.json" in self.directory:
             file = open(self.path + "/dev_config.json")
             self.config_file = self.path + "/dev_config.json"
-        elif "config.json" in self.config_files:
+        elif "config.json" in self.directory:
             file = open(self.path + "/config.json")
             self.config_file = self.path + "/config.json"
         else:
             self.config_file = None
-            
+        if "alive.png" and "dead.png" in self.directory:
+            self.alive_png = pygame.image.load(self.path + "/alive.png")
+            self.dead_png = pygame.image.load(self.path + "/dead.png")
+        else:
+            self.alive_png, self.dead_png = None, None
+
     def loadDefaults(self):
         self.refresh_rate = 60
         self.key_repeat = 50
@@ -182,9 +187,15 @@ def drawDots():
         border = 1 + board.dot // 10
         for (x,y) in board.gameboard:
             pygame.draw.rect(screen, settings.dot_colour, (x * board.dot+border, y * board.dot+border, board.dot-2*border, board.dot-2*border))
-    else: # horizontal stripes.
+    elif board.draw_mode == 3: # horizontal stripes.
         for (x,y) in board.gameboard:
             pygame.draw.rect(screen, settings.dot_colour, (x * board.dot, y * board.dot, board.dot, board.dot // 2))
+    else: # png versions.
+        for i in range(board.x_dots):
+            for j in range(board.y_dots):
+                screen.blit(settings.dead_png, (i * board.dot, j * board.dot))
+        for (x,y) in board.gameboard:
+            screen.blit(settings.alive_png, (x * board.dot, y * board.dot))
 
 def repeatKey(countdown: int, looper: int, direction: int):
     looper = (looper + 1) % (settings.refresh_rate * settings.key_repeat // 1000)
@@ -222,6 +233,14 @@ def makeGif(): # take .png files, generate .gif, then delete every .png
     for filename in os.listdir(dir): # delete .png files.
         if filename.endswith(".png"):
             os.remove(dir + filename)
+
+def initialiseImageMode():
+    try:
+        board.draw_mode = "image mode" if type(board.draw_mode) == int else 0
+        board.dot = settings.alive_png.get_rect().width
+        board.set_dots()
+    except Exception as e:
+        print("Missing alive.png and/or dead.png\n", e)
 
 def pause():
 
@@ -296,8 +315,17 @@ def pause():
                     except Exception as e:
                         print(f"imageio is required for gif mode to work.\nInstall with 'pip install imageio'.\nProceeding with normal mode.")
 
+                elif event.key == pygame.K_p:
+                    if settings.alive_png is not None:
+                        initialiseImageMode()
+                    else:
+                        print("Missing alive.png and/or dead.png.")
+
                 elif event.key == pygame.K_RETURN:
-                    board.draw_mode = (board.draw_mode + 1) % 4
+                    if board.draw_mode == "image mode":
+                        board.draw_mode = 0
+                    else:
+                        board.draw_mode = (board.draw_mode + 1) % 4
 
                 elif event.key == pygame.K_ESCAPE:
                     exit()
@@ -388,8 +416,17 @@ def game():
                     board.gameboard = set()
                     pause()
 
+                elif event.key == pygame.K_p:
+                    if settings.alive_png is not None:
+                        initialiseImageMode()
+                    else:
+                        print("Missing alive.png and/or dead.png.")
+
                 elif event.key == pygame.K_RETURN:
-                    board.draw_mode = (board.draw_mode + 1) % 4
+                    if board.draw_mode == "image mode":
+                        board.draw_mode = 0
+                    else:
+                        board.draw_mode = (board.draw_mode + 1) % 4
 
                 elif event.key == pygame.K_ESCAPE:
                     exit()

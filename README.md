@@ -7,12 +7,15 @@ A simple implementation in pygame based on an 'adjacency' algorithm that only ke
 
 * Cycle through different dot styles by pressing Enter.
 
+* Custom dot textures as .png files. Sample files included, press 'P' to enable/disable.
+
 ## Controls
     Space      -  Play/Pause  
     Up/Down    -  Slow down/Speed up animation  
     Left/Right -  Decrease/Increase dot size (1 pixel increments).  
     G          -  Toggle grid on/off  
     H          -  Toggle the help menu on/off.  
+    P          -  Toggle custom texture mode on/off.  
     I          -  Toggle GIF mode on/off. Only works while paused.
     S/L        -  Save or Load a gameboard. Only works while paused.  
     X          -  Clear the board.  
@@ -49,6 +52,7 @@ While many of these settings can be changed during play, these will always be lo
 ## Features
 * The colours are (reasonably) fully customisable!
 * The built-in GIF mode will allow you to share your patterns with others easily!
+* You can use custom textures for the dots by placing a (square-shaped) alive.png and dead.png in the main directory.
 * The window is resizable at any time.
 * You can draw by holding down the mouse button while paused.
 * The dot size, style, and speed of animation are completely controllable.
