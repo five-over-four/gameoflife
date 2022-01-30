@@ -17,10 +17,8 @@ class Settings:
         self.path = os.path.dirname(os.path.realpath(__file__))
         self.directory = os.listdir(self.path)
         if "dev_config.json" in self.directory:
-            file = open(self.path + "/dev_config.json")
             self.config_file = self.path + "/dev_config.json"
         elif "config.json" in self.directory:
-            file = open(self.path + "/config.json")
             self.config_file = self.path + "/config.json"
         else:
             self.config_file = None
